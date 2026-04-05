@@ -10,18 +10,25 @@ If you’re grading this: thanks for taking the time. The sections below explain
 
 ## What it actually does
 
-There are three roles: **Admin**, **Analyst**, and **Viewer**. **Admins** can manage users and all financial records. **Analysts** and **Viewers** use dashboard and analytics scoped to **their own** data. **Viewers** and **Analysts** can **create, list, update, and soft-delete their own** income/expense rows, and manage **monthly budgets** (expense caps per category) for themselves.
+Roles match the assignment model:
+
+| Role | Access |
+|------|--------|
+| **Viewer** | **Dashboard data only** — summary, trends, and recent activity scoped to the user (no transaction list API, no budgets, no analytics UI). |
+| **Analyst** | **View** financial records (read-only list), **insights** (Analytics / dashboard charts), and **budgets** (create/list/update for themselves). Cannot create/edit/delete transactions or manage users. |
+| **Admin** | **Create, update, and manage** financial records (any user), **users**, and full access to budgets and analytics. |
 
 The API is REST, JSON in and out, JWT in the `Authorization` header when a route is protected.
 
-Financial records: amount, income vs expense, category, date, optional note, tied to a user. **Budgets** store a monthly **cap** per **category** (match category names to expenses). Dashboard routes give totals, category breakdowns, recent rows, and monthly/weekly trends.
+Financial records: amount, income vs expense, category, date, optional note, tied to a user. **Budgets** store a monthly **cap** per **category**. Dashboard routes give totals, category breakdowns, recent rows, and monthly/weekly trends.
 
 ---
 
 ## Things I decided (so you know where I’m coming from)
 
-- **Admin sees everything.** Totals and lists for admins aggregate across all users. Analysts and viewers only see their own rows for dashboard math and for **financial records / budgets**.
-- **Viewers get full CRUD on their own records** and budgets; they don’t see other users’ data.
+- **Admin sees everything** and is the only role that can **mutate** financial records (POST/PATCH/DELETE) and manage **users**.
+- **Analysts** see **read-only** transaction lists and their own dashboard/budget/analytics data.
+- **Viewers** only consume **dashboard** endpoints (no `/financial-records`, no `/budgets`).
 - **Anyone can hit public signup** and become a Viewer; only an admin can hand out Analyst/Admin via register or the UI.
 - **MySQL** is what the schema targets. If you really want SQLite, you’d switch Prisma’s provider and URL—just don’t forget to say so in your own notes if you fork this.
 
@@ -146,14 +153,14 @@ Most routes want:
 - `PATCH /api/users/:id`  
 - `DELETE /api/users/:id`  
 
-**Financial records** (all roles; non-admins only see their own rows)
+**Financial records**
 
-- `GET /api/financial-records` — filters: dates, category, type, pagination; text search hits **category** (notes are encrypted in the DB)  
-- `GET /api/financial-records/:id`  
-- `POST` — create a row; **Admin** may set `userId` for another user; others create for themselves  
-- `PATCH`, `DELETE` — soft-delete on `DELETE`; non-admins only for **their** rows  
+- `GET /api/financial-records` — **Admin**, **Analyst** only; Analysts see **their own** rows; Admins see all. Filters, pagination; search hits **category** (notes encrypted).  
+- `GET /api/financial-records/:id` — **Admin**, **Analyst** (scoped as above). **Viewers** have no access.  
+- `POST` — **Admin** only; optional `userId` to assign the record to another user.  
+- `PATCH`, `DELETE` — **Admin** only (soft delete).  
 
-**Budgets** (monthly expense cap per category; all roles; non-admins only their own)
+**Budgets** (monthly expense cap per category; **Admin** and **Analyst** only; scoped to own user unless Admin)
 
 - `GET /api/budgets` — query: `year`, `month`, optional `userId` (admin only)  
 - `GET /api/budgets/summary` — spent vs budget for that month (expenses summed by category)  

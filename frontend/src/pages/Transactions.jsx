@@ -23,9 +23,8 @@ const field =
 export function Transactions() {
   const { user } = useAuth()
   const isAdmin = user?.role === 'Admin'
-  const canManageOwn = user?.role === 'Viewer' || user?.role === 'Analyst' || isAdmin
-  const canDeleteRow = (row) =>
-    isAdmin || (row.user?.id != null && row.user.id === user?.id)
+  /** Only admins may create, update, or delete records (API-enforced). Analysts have read-only access. */
+  const canMutateRecords = isAdmin
 
   const [items, setItems] = useState([])
   const [pagination, setPagination] = useState({ page: 1, totalPages: 1 })
@@ -71,7 +70,7 @@ export function Transactions() {
 
   async function handleCreate(e) {
     e.preventDefault()
-    if (!canManageOwn) return
+    if (!canMutateRecords) return
     setFormError('')
     setSaving(true)
     try {
@@ -97,12 +96,12 @@ export function Transactions() {
         <h1 className="text-2xl font-bold tracking-tight text-white sm:text-3xl">Transactions</h1>
         <p className="mt-1 text-sm text-zinc-500">
           {isAdmin
-            ? 'View and manage all users’ records.'
-            : 'Your income & expenses — add, filter, and remove your own rows.'}
+            ? 'Create, update, and remove records for any user.'
+            : 'View your assigned records (read-only). Admins manage data.'}
         </p>
       </div>
 
-      {canManageOwn && (
+      {canMutateRecords && (
         <form onSubmit={handleCreate} className="zorvyn-glass rounded-2xl p-6">
           <h2 className="text-sm font-semibold text-white">Add transaction</h2>
           {formError && (
@@ -234,13 +233,18 @@ export function Transactions() {
                 <th className="px-6 py-3 font-medium">Owner</th>
                 <th className="px-6 py-3 font-medium">Type</th>
                 <th className="px-6 py-3 font-medium text-right">Amount</th>
-                <th className="px-6 py-3 font-medium text-right">Actions</th>
+                {canMutateRecords && (
+                  <th className="px-6 py-3 font-medium text-right">Actions</th>
+                )}
               </tr>
             </thead>
             <tbody>
               {loading && (
                 <tr>
-                  <td colSpan={6} className="px-6 py-8 text-center text-zinc-500">
+                  <td
+                    colSpan={canMutateRecords ? 6 : 5}
+                    className="px-6 py-8 text-center text-zinc-500"
+                  >
                     Loading…
                   </td>
                 </tr>
@@ -261,8 +265,8 @@ export function Transactions() {
                     >
                       {row.type === 'expense' ? '-' : '+'}${money(row.amount)}
                     </td>
-                    <td className="px-6 py-3 text-right">
-                      {canDeleteRow(row) ? (
+                    {canMutateRecords && (
+                      <td className="px-6 py-3 text-right">
                         <button
                           type="button"
                           className="text-xs font-medium text-pink-400 hover:underline"
@@ -274,10 +278,8 @@ export function Transactions() {
                         >
                           Remove
                         </button>
-                      ) : (
-                        <span className="text-xs text-zinc-600">—</span>
-                      )}
-                    </td>
+                      </td>
+                    )}
                   </tr>
                 ))}
             </tbody>

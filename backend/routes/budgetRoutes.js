@@ -2,11 +2,13 @@ const express = require('express');
 const { body, param, query } = require('express-validator');
 const budgetController = require('../controllers/budgetController');
 const { checkAuth } = require('../middleware/checkAuth');
+const { checkRole } = require('../middleware/checkRole');
 const { validateRequest } = require('../middleware/validateRequest');
 
 const router = express.Router();
 
 router.use(checkAuth);
+router.use(checkRole('Admin', 'Analyst'));
 
 router.get(
   '/summary',

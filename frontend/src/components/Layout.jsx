@@ -20,6 +20,8 @@ const navClass = ({ isActive }) =>
 export function Layout() {
   const { user, logout } = useAuth()
   const isAdmin = user?.role === 'Admin'
+  const isViewer = user?.role === 'Viewer'
+  const canInsights = isAdmin || user?.role === 'Analyst'
 
   return (
     <div className="zorvyn-canvas flex min-h-screen">
@@ -41,18 +43,24 @@ export function Layout() {
             <LayoutDashboard className="h-4 w-4 opacity-80" />
             Dashboard
           </NavLink>
-          <NavLink to="/transactions" className={navClass}>
-            <Wallet className="h-4 w-4 opacity-80" />
-            Transactions
-          </NavLink>
-          <NavLink to="/budgets" className={navClass}>
-            <PiggyBank className="h-4 w-4 opacity-80" />
-            Budgets
-          </NavLink>
-          <NavLink to="/analytics" className={navClass}>
-            <TrendingUp className="h-4 w-4 opacity-80" />
-            Analytics
-          </NavLink>
+          {!isViewer && (
+            <>
+              <NavLink to="/transactions" className={navClass}>
+                <Wallet className="h-4 w-4 opacity-80" />
+                Transactions
+              </NavLink>
+              <NavLink to="/budgets" className={navClass}>
+                <PiggyBank className="h-4 w-4 opacity-80" />
+                Budgets
+              </NavLink>
+            </>
+          )}
+          {canInsights && (
+            <NavLink to="/analytics" className={navClass}>
+              <TrendingUp className="h-4 w-4 opacity-80" />
+              Analytics
+            </NavLink>
+          )}
           {isAdmin && (
             <NavLink to="/management" className={navClass}>
               <Users className="h-4 w-4 opacity-80" />

@@ -21,7 +21,7 @@ const listValidators = [
 
 router.get(
   '/',
-  checkRole('Admin', 'Analyst', 'Viewer'),
+  checkRole('Admin', 'Analyst'),
   listValidators,
   validateRequest,
   financialRecordController.list
@@ -29,14 +29,14 @@ router.get(
 
 router.get(
   '/:id',
-  checkRole('Admin', 'Analyst', 'Viewer'),
+  checkRole('Admin', 'Analyst'),
   [param('id').isInt().withMessage('Invalid id'), validateRequest],
   financialRecordController.getOne
 );
 
 router.post(
   '/',
-  checkRole('Admin', 'Analyst', 'Viewer'),
+  checkRole('Admin'),
   [
     body('amount').isFloat({ min: 0 }).withMessage('Amount must be a positive number'),
     body('type').isIn(['income', 'expense']).withMessage('Type must be income or expense'),
@@ -51,7 +51,7 @@ router.post(
 
 router.patch(
   '/:id',
-  checkRole('Admin', 'Analyst', 'Viewer'),
+  checkRole('Admin'),
   [
     param('id').isInt().withMessage('Invalid id'),
     body('amount').optional().isFloat({ min: 0 }),
@@ -66,7 +66,7 @@ router.patch(
 
 router.delete(
   '/:id',
-  checkRole('Admin', 'Analyst', 'Viewer'),
+  checkRole('Admin'),
   [param('id').isInt().withMessage('Invalid id'), validateRequest],
   financialRecordController.remove
 );

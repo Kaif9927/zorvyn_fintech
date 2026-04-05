@@ -52,7 +52,6 @@ function AppRoutes() {
         }
       >
         <Route index element={<Dashboard />} />
-        <Route path="analytics" element={<Analytics />} />
         <Route
           path="management"
           element={
@@ -61,8 +60,30 @@ function AppRoutes() {
             </ProtectedRoute>
           }
         />
-        <Route path="transactions" element={<Transactions />} />
-        <Route path="budgets" element={<Budgets />} />
+        <Route
+          path="transactions"
+          element={
+            <ProtectedRoute roles={['Admin', 'Analyst']}>
+              <Transactions />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="budgets"
+          element={
+            <ProtectedRoute roles={['Admin', 'Analyst']}>
+              <Budgets />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="analytics"
+          element={
+            <ProtectedRoute roles={['Admin', 'Analyst']}>
+              <Analytics />
+            </ProtectedRoute>
+          }
+        />
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
