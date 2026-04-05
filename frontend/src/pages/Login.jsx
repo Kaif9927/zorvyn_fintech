@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Link, useNavigate, useLocation } from 'react-router-dom'
-import { ArrowRight, Play } from 'lucide-react'
+import { ArrowRight, LogIn } from 'lucide-react'
 import { useAuth } from '../hooks/useAuth'
 
 export function Login() {
@@ -47,25 +47,26 @@ export function Login() {
           financial systems
         </h1>
         <p className="mx-auto mt-5 max-w-xl text-pretty text-sm leading-relaxed text-zinc-400 sm:text-base">
-          Enterprise-grade infrastructure that scales with you. Sign in to access your Zorvyn
-          dashboard — same login for admins and team members.
+          Enterprise-grade infrastructure that scales with you. New users get a{' '}
+          <span className="text-zinc-300">Viewer</span> account via Create viewer account; admins
+          promote Analysts and other roles from Management.
         </p>
         <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
+          <Link
+            to="/signup"
+            className="inline-flex items-center gap-2 rounded-lg bg-sky-500 px-5 py-2.5 text-sm font-semibold text-white shadow-lg shadow-sky-500/25 transition hover:bg-sky-400"
+          >
+            Create viewer account
+            <ArrowRight className="h-4 w-4" />
+          </Link>
           <button
             type="button"
             onClick={() => document.getElementById('signin-form')?.scrollIntoView({ behavior: 'smooth' })}
-            className="inline-flex items-center gap-2 rounded-lg bg-sky-500 px-5 py-2.5 text-sm font-semibold text-white shadow-lg shadow-sky-500/25 transition hover:bg-sky-400"
-          >
-            Get started
-            <ArrowRight className="h-4 w-4" />
-          </button>
-          <a
-            href="#signin-form"
             className="inline-flex items-center gap-2 rounded-lg border border-white/20 bg-transparent px-5 py-2.5 text-sm font-medium text-zinc-200 transition hover:border-white/30 hover:bg-white/5"
           >
-            <Play className="h-4 w-4 fill-current" />
-            See how it works
-          </a>
+            <LogIn className="h-4 w-4" />
+            Sign in
+          </button>
         </div>
       </div>
 
@@ -120,9 +121,10 @@ export function Login() {
         <p className="mt-6 text-center text-sm text-zinc-500">
           New here?{' '}
           <Link to="/signup" className="font-medium text-sky-400 hover:text-sky-300">
-            Create an account
-          </Link>{' '}
-          (viewer)
+            Create viewer account
+          </Link>
+          {' — '}
+          <span className="text-zinc-600">Viewer role only</span>
         </p>
       </div>
     </div>
