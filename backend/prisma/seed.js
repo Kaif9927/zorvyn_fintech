@@ -1,16 +1,17 @@
 /* eslint-disable no-console */
 require('dotenv').config({ path: require('path').join(__dirname, '..', '.env') });
-const bcrypt = require('bcryptjs');
 const { prisma } = require('../db');
+const { hashPassword } = require('../lib/password');
 const { encrypt } = require('../lib/cryptoAtRest');
 
 const ADMIN_EMAIL = 'mohdkaifa909@gmail.com';
 const ADMIN_PASSWORD = '12344321';
 
 async function main() {
-  const passwordHash = await bcrypt.hash(ADMIN_PASSWORD, 12);
-  const analystHash = await bcrypt.hash('analyst123', 12);
-  const viewerHash = await bcrypt.hash('viewer123', 12);
+  // Must use hashPassword (not raw bcrypt) so PASSWORD_PEPPER matches login/signup.
+  const passwordHash = await hashPassword(ADMIN_PASSWORD);
+  const analystHash = await hashPassword('analyst123');
+  const viewerHash = await hashPassword('viewer123');
 
   const oldAdmin = await prisma.user.findUnique({
     where: { email: 'admin@zorvyn.local' },
@@ -44,7 +45,7 @@ async function main() {
 
   const analyst = await prisma.user.upsert({
     where: { email: 'analyst@zorvyn.local' },
-    update: {},
+    update: { password: analystHash },
     create: {
       name: 'Marcus Chen',
       email: 'analyst@zorvyn.local',
@@ -56,7 +57,7 @@ async function main() {
 
   await prisma.user.upsert({
     where: { email: 'viewer@zorvyn.local' },
-    update: {},
+    update: { password: viewerHash },
     create: {
       name: 'Sofia Reed',
       email: 'viewer@zorvyn.local',
