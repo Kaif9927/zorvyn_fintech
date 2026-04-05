@@ -1,0 +1,62 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  Admin
+  Analyst
+  Viewer
+}
+
+enum UserStatus {
+  active
+  inactive
+}
+
+enum RecordType {
+  income
+  expense
+}
+
+model User {
+  id        Int            @id @default(autoincrement())
+  name      String         @db.VarChar(120)
+  email     String         @unique @db.VarChar(255)
+  password  String         @db.VarChar(255)
+  role      Role           @default(Viewer)
+  status    UserStatus     @default(active)
+  createdAt DateTime       @default(now())
+  updatedAt DateTime       @updatedAt
+  records   FinancialRecord[]
+
+  @@index([email])
+  @@index([role])
+  @@map("users")
+}
+
+model FinancialRecord {
+  id         Int         @id @default(autoincrement())
+  amount     Decimal     @db.Decimal(14, 2)
+  type       RecordType
+  category   String      @db.VarChar(100)
+  date       DateTime    @db.DateTime(0)
+  note       String?     @db.VarChar(500)
+  is_deleted Boolean     @default(false)
+  userId     Int
+  user       User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt  DateTime    @default(now())
+  updatedAt  DateTime    @updatedAt
+
+  @@index([userId])
+  @@index([date])
+  @@index([category])
+  @@index([type])
+  @@index([userId, date])
+  @@index([is_deleted])
+  @@map("financial_records")
+}
