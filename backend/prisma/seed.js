@@ -141,6 +141,45 @@ async function main() {
     });
   }
 
+  const y = new Date().getFullYear();
+  const m = new Date().getMonth() + 1;
+  await prisma.budget.upsert({
+    where: {
+      userId_category_year_month: {
+        userId: admin.id,
+        category: 'Groceries',
+        year: y,
+        month: m,
+      },
+    },
+    create: {
+      userId: admin.id,
+      category: 'Groceries',
+      amount: 600,
+      year: y,
+      month: m,
+    },
+    update: { amount: 600 },
+  });
+  await prisma.budget.upsert({
+    where: {
+      userId_category_year_month: {
+        userId: admin.id,
+        category: 'Rent',
+        year: y,
+        month: m,
+      },
+    },
+    create: {
+      userId: admin.id,
+      category: 'Rent',
+      amount: 2000,
+      year: y,
+      month: m,
+    },
+    update: { amount: 2000 },
+  });
+
   console.log('Seed complete. Logins:');
   console.log(`  Admin   ${ADMIN_EMAIL.toLowerCase()} / ${ADMIN_PASSWORD}`);
   console.log('  Analyst analyst@zorvyn.local / analyst123');

@@ -3,3 +3,5 @@ node_modules/
 dist/
 *.log
 .DS_Store
+# stray file sometimes created on Windows; do not commit
+/node

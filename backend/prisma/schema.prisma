@@ -33,6 +33,7 @@ model User {
   createdAt DateTime       @default(now())
   updatedAt DateTime       @updatedAt
   records   FinancialRecord[]
+  budgets   Budget[]
 
   @@index([email])
   @@index([role])
@@ -59,4 +60,22 @@ model FinancialRecord {
   @@index([userId, date])
   @@index([is_deleted])
   @@map("financial_records")
+}
+
+/// Monthly expense cap per category ("budget as expense" — compare actual spend vs this amount).
+model Budget {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  category  String   @db.VarChar(100)
+  amount    Decimal  @db.Decimal(14, 2)
+  year      Int
+  month     Int
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([userId, category, year, month])
+  @@index([userId])
+  @@index([userId, year, month])
+  @@map("budgets")
 }

@@ -4,6 +4,7 @@ import {
   HelpCircle,
   LayoutDashboard,
   LogOut,
+  PiggyBank,
   Settings,
   TrendingUp,
   Users,
@@ -20,7 +21,6 @@ const navClass = ({ isActive }) =>
 
 export function Layout() {
   const { user, logout } = useAuth()
-  const canTx = user?.role === 'Admin' || user?.role === 'Analyst'
   const isAdmin = user?.role === 'Admin'
 
   return (
@@ -43,12 +43,14 @@ export function Layout() {
             <LayoutDashboard className="h-4 w-4 opacity-80" />
             Dashboard
           </NavLink>
-          {canTx && (
-            <NavLink to="/transactions" className={navClass}>
-              <Wallet className="h-4 w-4 opacity-80" />
-              Transactions
-            </NavLink>
-          )}
+          <NavLink to="/transactions" className={navClass}>
+            <Wallet className="h-4 w-4 opacity-80" />
+            Transactions
+          </NavLink>
+          <NavLink to="/budgets" className={navClass}>
+            <PiggyBank className="h-4 w-4 opacity-80" />
+            Budgets
+          </NavLink>
           <NavLink to="/analytics" className={navClass}>
             <TrendingUp className="h-4 w-4 opacity-80" />
             Analytics

@@ -8,6 +8,7 @@ import { Dashboard } from './pages/Dashboard'
 import { Transactions } from './pages/Transactions'
 import { Analytics } from './pages/Analytics'
 import { Management } from './pages/Management'
+import { Budgets } from './pages/Budgets'
 
 function LoginGate({ children }) {
   const { user, booting } = useAuth()
@@ -60,14 +61,8 @@ function AppRoutes() {
             </ProtectedRoute>
           }
         />
-        <Route
-          path="transactions"
-          element={
-            <ProtectedRoute roles={['Admin', 'Analyst']}>
-              <Transactions />
-            </ProtectedRoute>
-          }
-        />
+        <Route path="transactions" element={<Transactions />} />
+        <Route path="budgets" element={<Budgets />} />
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>

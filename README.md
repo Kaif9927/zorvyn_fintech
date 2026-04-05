@@ -1,10 +1,8 @@
-#id of admin is
-Mohdkaifa909@gmail.com
-password is 12344321
-
 # Zorvyn
 
-This is a small finance dashboard backend (plus a React UI) I put together for a backend assignment. The idea is pretty standard: users with roles, financial records, and some aggregated endpoints for charts and summaries. Nothing here claims to be production-hardened—it’s meant to be readable, honest, and easy to run locally.
+This is a small finance dashboard backend (plus a React UI) I put together for a backend assignment: users with roles, financial records, **monthly budgets per expense category**, and aggregated dashboard endpoints. Nothing here claims to be production-hardened—it’s meant to be readable and easy to run locally.
+
+**Do not commit `.env` or put real passwords in this file.** After `npm run db:seed`, demo logins are printed in the terminal (see **Seed logins** below).
 
 If you’re grading this: thanks for taking the time. The sections below explain what I built, what I assumed, and how to get it running on your machine.
 
@@ -12,18 +10,18 @@ If you’re grading this: thanks for taking the time. The sections below explain
 
 ## What it actually does
 
-There are three roles: **Admin**, **Analyst**, and **Viewer**. Admins can manage users and all financial records. Analysts can read records and hit the dashboard stuff, but only for their own data (unless you’re comparing to admin—see below). Viewers are intentionally limited to the dashboard-style endpoints so they can’t browse the full transaction API.
+There are three roles: **Admin**, **Analyst**, and **Viewer**. **Admins** can manage users and all financial records. **Analysts** and **Viewers** use dashboard and analytics scoped to **their own** data. **Viewers** and **Analysts** can **create, list, update, and soft-delete their own** income/expense rows, and manage **monthly budgets** (expense caps per category) for themselves.
 
 The API is REST, JSON in and out, JWT in the `Authorization` header when a route is protected.
 
-On the data side, you’ve got the usual fields: amount, income vs expense, category, date, optional note, tied to a user. Records can be filtered, paginated, and soft-deleted. Dashboard routes give you totals, category breakdowns, recent rows, and monthly/weekly trends.
+Financial records: amount, income vs expense, category, date, optional note, tied to a user. **Budgets** store a monthly **cap** per **category** (match category names to expenses). Dashboard routes give totals, category breakdowns, recent rows, and monthly/weekly trends.
 
 ---
 
 ## Things I decided (so you know where I’m coming from)
 
-- **Admin sees everything.** Totals and lists for admins aggregate across all users. Analysts and viewers only see their own rows for dashboard math and (for analysts) record reads. That felt like the least confusing split for a demo.
-- **Viewers don’t get the full `/financial-records` list.** The brief talked about “dashboard data” for viewers, so I wired them to summary/trend/recent endpoints instead of exposing the whole CRUD list.
+- **Admin sees everything.** Totals and lists for admins aggregate across all users. Analysts and viewers only see their own rows for dashboard math and for **financial records / budgets**.
+- **Viewers get full CRUD on their own records** and budgets; they don’t see other users’ data.
 - **Anyone can hit public signup** and become a Viewer; only an admin can hand out Analyst/Admin via register or the UI.
 - **MySQL** is what the schema targets. If you really want SQLite, you’d switch Prisma’s provider and URL—just don’t forget to say so in your own notes if you fork this.
 
@@ -144,11 +142,20 @@ Most routes want:
 - `PATCH /api/users/:id`  
 - `DELETE /api/users/:id`  
 
-**Financial records**
+**Financial records** (all roles; non-admins only see their own rows)
 
-- `GET /api/financial-records` — admin + analyst; filters for dates, category, type, pagination; text search hits **category** (notes are encrypted in the DB)  
+- `GET /api/financial-records` — filters: dates, category, type, pagination; text search hits **category** (notes are encrypted in the DB)  
 - `GET /api/financial-records/:id`  
-- `POST`, `PATCH`, `DELETE` — admin only; delete is a soft delete  
+- `POST` — create a row; **Admin** may set `userId` for another user; others create for themselves  
+- `PATCH`, `DELETE` — soft-delete on `DELETE`; non-admins only for **their** rows  
+
+**Budgets** (monthly expense cap per category; all roles; non-admins only their own)
+
+- `GET /api/budgets` — query: `year`, `month`, optional `userId` (admin only)  
+- `GET /api/budgets/summary` — spent vs budget for that month (expenses summed by category)  
+- `POST /api/budgets` — body: `category`, `amount`, `year`, `month`; optional `userId` (admin only); upserts on same user+category+month  
+- `PATCH /api/budgets/:id` — body: `amount`  
+- `DELETE /api/budgets/:id`  
 
 **Dashboard** (any logged-in role, but data scoped by role as above)
 

@@ -11,6 +11,7 @@ const authRoutes = require('./routes/authRoutes');
 const userRoutes = require('./routes/userRoutes');
 const financialRecordRoutes = require('./routes/financialRecordRoutes');
 const dashboardRoutes = require('./routes/dashboardRoutes');
+const budgetRoutes = require('./routes/budgetRoutes');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -26,6 +27,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/financial-records', financialRecordRoutes);
 app.use('/api/dashboard', dashboardRoutes);
+app.use('/api/budgets', budgetRoutes);
 
 app.use((req, res, next) => {
   next(new AppError('Not found', 404));
