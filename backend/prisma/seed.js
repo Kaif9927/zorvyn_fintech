@@ -1,15 +1,24 @@
 /* eslint-disable no-console */
 require('dotenv').config({ path: require('path').join(__dirname, '..', '.env') });
 const { prisma } = require('../db');
-const { hashPassword } = require('../lib/password');
+const { hashPassword, comparePassword } = require('../lib/password');
 const { encrypt } = require('../lib/cryptoAtRest');
 
 const ADMIN_EMAIL = 'mohdkaifa909@gmail.com';
 const ADMIN_PASSWORD = '12344321';
 
 async function main() {
+  // Run seed where env matches the API (e.g. Render Shell). If you seed from your PC
+  // against prod DB, copy PASSWORD_PEPPER from Render into backend/.env or hashes won't match login.
+  console.log(
+    `PASSWORD_PEPPER: ${process.env.PASSWORD_PEPPER ? 'set (must match API server)' : 'not set'}`
+  );
+
   // Must use hashPassword (not raw bcrypt) so PASSWORD_PEPPER matches login/signup.
   const passwordHash = await hashPassword(ADMIN_PASSWORD);
+  if (!(await comparePassword(ADMIN_PASSWORD, passwordHash))) {
+    throw new Error('Seed bug: password hash does not verify with comparePassword');
+  }
   const analystHash = await hashPassword('analyst123');
   const viewerHash = await hashPassword('viewer123');
 
@@ -32,7 +41,12 @@ async function main() {
   } else {
     admin = await prisma.user.upsert({
       where: { email: ADMIN_EMAIL.toLowerCase() },
-      update: { password: passwordHash, name: 'Mohd Kaifa' },
+      update: {
+        password: passwordHash,
+        name: 'Mohd Kaifa',
+        role: 'Admin',
+        status: 'active',
+      },
       create: {
         name: 'Mohd Kaifa',
         email: ADMIN_EMAIL.toLowerCase(),
