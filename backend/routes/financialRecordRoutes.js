@@ -4,18 +4,38 @@ const financialRecordController = require('../controllers/financialRecordControl
 const { checkAuth } = require('../middleware/checkAuth');
 const { checkRole } = require('../middleware/checkRole');
 const { validateRequest } = require('../middleware/validateRequest');
+const {
+  requireAtLeastOneBodyField,
+} = require('../middleware/requireAtLeastOneBodyField');
 
 const router = express.Router();
 
 router.use(checkAuth);
 
 const listValidators = [
-  query('page').optional().isInt({ min: 1 }).toInt(),
-  query('limit').optional().isInt({ min: 1, max: 100 }).toInt(),
-  query('dateFrom').optional().isISO8601(),
-  query('dateTo').optional().isISO8601(),
+  query('page')
+    .optional()
+    .isInt({ min: 1 })
+    .withMessage('page must be a positive integer')
+    .toInt(),
+  query('limit')
+    .optional()
+    .isInt({ min: 1, max: 100 })
+    .withMessage('limit must be between 1 and 100')
+    .toInt(),
+  query('dateFrom')
+    .optional()
+    .isISO8601()
+    .withMessage('dateFrom must be a valid ISO 8601 date'),
+  query('dateTo')
+    .optional()
+    .isISO8601()
+    .withMessage('dateTo must be a valid ISO 8601 date'),
   query('category').optional().trim(),
-  query('type').optional().isIn(['income', 'expense']),
+  query('type')
+    .optional()
+    .isIn(['income', 'expense'])
+    .withMessage('type must be income or expense'),
   query('search').optional().trim(),
 ];
 
@@ -43,7 +63,10 @@ router.post(
     body('category').trim().notEmpty().withMessage('Category is required'),
     body('date').isISO8601().withMessage('Valid date is required'),
     body('note').optional().trim(),
-    body('userId').optional().isInt().withMessage('userId must be an integer'),
+    body('userId')
+      .optional()
+      .isInt({ min: 1 })
+      .withMessage('userId must be a positive integer'),
   ],
   validateRequest,
   financialRecordController.create
@@ -54,13 +77,23 @@ router.patch(
   checkRole('Admin'),
   [
     param('id').isInt().withMessage('Invalid id'),
-    body('amount').optional().isFloat({ min: 0 }),
-    body('type').optional().isIn(['income', 'expense']),
-    body('category').optional().trim().notEmpty(),
-    body('date').optional().isISO8601(),
+    body('amount')
+      .optional()
+      .isFloat({ min: 0 })
+      .withMessage('Amount must be a positive number'),
+    body('type')
+      .optional()
+      .isIn(['income', 'expense'])
+      .withMessage('Type must be income or expense'),
+    body('category').optional().trim().notEmpty().withMessage('Category cannot be empty'),
+    body('date')
+      .optional()
+      .isISO8601()
+      .withMessage('Valid date is required'),
     body('note').optional().trim(),
   ],
   validateRequest,
+  requireAtLeastOneBodyField(['amount', 'type', 'category', 'date', 'note']),
   financialRecordController.update
 );
 

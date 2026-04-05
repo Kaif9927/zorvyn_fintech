@@ -74,6 +74,10 @@ async function updateUser(id, data) {
     updateData.password = await hashPassword(data.password);
   }
 
+  if (Object.keys(updateData).length === 0) {
+    throw new AppError('No valid fields to update', 400);
+  }
+
   return prisma.user.update({
     where: { id: Number(id) },
     data: updateData,

@@ -3,6 +3,7 @@ const { body } = require('express-validator');
 const authController = require('../controllers/authController');
 const { checkAuth } = require('../middleware/checkAuth');
 const { checkRole } = require('../middleware/checkRole');
+const { validateRequest } = require('../middleware/validateRequest');
 
 const router = express.Router();
 
@@ -11,6 +12,7 @@ router.post(
   [
     body('email').isEmail().withMessage('Valid email is required'),
     body('password').notEmpty().withMessage('Password is required'),
+    validateRequest,
   ],
   authController.login
 );
@@ -24,6 +26,7 @@ router.post(
     body('password')
       .isLength({ min: 6 })
       .withMessage('Password must be at least 6 characters'),
+    validateRequest,
   ],
   authController.signup
 );
@@ -38,6 +41,7 @@ router.post(
     body('password')
       .isLength({ min: 6 })
       .withMessage('Password must be at least 6 characters'),
+    validateRequest,
   ],
   authController.bootstrapAdmin
 );
@@ -60,6 +64,7 @@ router.post(
       .optional()
       .isIn(['active', 'inactive'])
       .withMessage('Invalid status'),
+    validateRequest,
   ],
   authController.register
 );

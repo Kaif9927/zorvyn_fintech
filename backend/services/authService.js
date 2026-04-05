@@ -39,7 +39,7 @@ async function registerUser(data, actorRole) {
   const email = data.email.toLowerCase();
   const existing = await prisma.user.findUnique({ where: { email } });
   if (existing) {
-    throw new AppError('Email is already registered', 400);
+    throw new AppError('Email is already registered', 409);
   }
 
   const hashed = await hashPassword(data.password);
@@ -68,7 +68,7 @@ async function signupPublic({ name, email, password }) {
   const emailNorm = email.toLowerCase();
   const existing = await prisma.user.findUnique({ where: { email: emailNorm } });
   if (existing) {
-    throw new AppError('Email is already registered', 400);
+    throw new AppError('Email is already registered', 409);
   }
 
   const hashed = await hashPassword(password);
@@ -113,7 +113,7 @@ async function bootstrapFirstAdmin({ name, email, password }) {
   const emailNorm = email.toLowerCase();
   const existing = await prisma.user.findUnique({ where: { email: emailNorm } });
   if (existing) {
-    throw new AppError('Email is already registered', 400);
+    throw new AppError('Email is already registered', 409);
   }
 
   const hashed = await hashPassword(password);

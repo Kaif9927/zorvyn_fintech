@@ -1,13 +1,8 @@
-const { validationResult } = require('express-validator');
 const financialRecordService = require('../services/financialRecordService');
 const { asyncHandler } = require('../lib/asyncHandler');
 const { AppError } = require('../lib/errors');
 
 const list = asyncHandler(async (req, res) => {
-  const errors = validationResult(req);
-  if (!errors.isEmpty()) {
-    throw new AppError(errors.array()[0].msg, 400);
-  }
   const data = await financialRecordService.listRecords(
     req.query,
     req.user.id,
@@ -26,10 +21,6 @@ const getOne = asyncHandler(async (req, res) => {
 });
 
 const create = asyncHandler(async (req, res) => {
-  const errors = validationResult(req);
-  if (!errors.isEmpty()) {
-    throw new AppError(errors.array()[0].msg, 400);
-  }
   const targetUserId = req.body.userId ? Number(req.body.userId) : req.user.id;
   if (req.user.role !== 'Admin' && targetUserId !== req.user.id) {
     throw new AppError('You can only create records for yourself', 403);
@@ -48,10 +39,6 @@ const create = asyncHandler(async (req, res) => {
 });
 
 const update = asyncHandler(async (req, res) => {
-  const errors = validationResult(req);
-  if (!errors.isEmpty()) {
-    throw new AppError(errors.array()[0].msg, 400);
-  }
   const record = await financialRecordService.updateRecord(
     req.params.id,
     req.body,

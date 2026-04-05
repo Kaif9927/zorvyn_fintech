@@ -18,6 +18,16 @@ const PORT = process.env.PORT || 5000;
 
 app.use(cors({ origin: true, credentials: true }));
 app.use(express.json());
+app.use((err, req, res, next) => {
+  // body-parser JSON failures (malformed JSON, strict mode violations)
+  if (err.status === 400 && err.type === 'entity.parse.failed') {
+    return res.status(400).json({
+      success: false,
+      error: 'Invalid JSON in request body',
+    });
+  }
+  next(err);
+});
 
 app.get('/health', (req, res) => {
   res.json({ ok: true, service: 'zorvyn-api' });

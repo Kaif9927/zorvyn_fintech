@@ -102,6 +102,11 @@ async function getRecordById(id, userId, role) {
 }
 
 async function createRecord(data, userId) {
+  const target = await prisma.user.findUnique({ where: { id: userId } });
+  if (!target) {
+    throw new AppError('Target user does not exist', 400);
+  }
+
   const noteStored = data.note ? encrypt(data.note) : null;
   const created = await prisma.financialRecord.create({
     data: {
@@ -129,6 +134,10 @@ async function updateRecord(id, data, userId, role) {
   if (data.date !== undefined) updateData.date = new Date(data.date);
   if (data.note !== undefined) {
     updateData.note = data.note ? encrypt(data.note) : null;
+  }
+
+  if (Object.keys(updateData).length === 0) {
+    throw new AppError('No valid fields to update', 400);
   }
 
   const updated = await prisma.financialRecord.update({

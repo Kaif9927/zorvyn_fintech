@@ -1,8 +1,14 @@
 class AppError extends Error {
-  constructor(message, statusCode = 500) {
+  /**
+   * @param {string} message
+   * @param {number} [statusCode=500]
+   * @param {object} [details] - optional extra context (safe to expose to clients)
+   */
+  constructor(message, statusCode = 500, details) {
     super(message);
     this.statusCode = statusCode;
     this.isOperational = true;
+    if (details !== undefined) this.details = details;
   }
 }
 
@@ -13,10 +19,14 @@ function sendError(res, err) {
       ? 'Something went wrong. Please try again later.'
       : err.message || 'Unexpected error';
 
-  return res.status(status).json({
+  const payload = {
     success: false,
     error: message,
-  });
+  };
+  if (err.details && typeof err.details === 'object') {
+    payload.details = err.details;
+  }
+  return res.status(status).json(payload);
 }
 
 module.exports = { AppError, sendError };
