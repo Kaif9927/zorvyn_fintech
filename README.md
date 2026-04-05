@@ -1,3 +1,7 @@
+#id of admin is
+Mohdkaifa909@gmail.com
+password is 12344321
+
 # Zorvyn
 
 This is a small finance dashboard backend (plus a React UI) I put together for a backend assignment. The idea is pretty standard: users with roles, financial records, and some aggregated endpoints for charts and summaries. Nothing here claims to be production-hardened—it’s meant to be readable, honest, and easy to run locally.
