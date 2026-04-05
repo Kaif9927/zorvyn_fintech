@@ -28,6 +28,20 @@ router.post(
   authController.signup
 );
 
+router.get('/bootstrap-status', authController.bootstrapStatus);
+
+router.post(
+  '/bootstrap-admin',
+  [
+    body('name').trim().notEmpty().withMessage('Name is required'),
+    body('email').isEmail().withMessage('Valid email is required'),
+    body('password')
+      .isLength({ min: 6 })
+      .withMessage('Password must be at least 6 characters'),
+  ],
+  authController.bootstrapAdmin
+);
+
 router.post(
   '/register',
   checkAuth,

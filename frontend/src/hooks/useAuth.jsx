@@ -49,6 +49,21 @@ export function AuthProvider({ children }) {
     [login]
   )
 
+  /** First-time setup only — API returns 403 if an admin already exists. */
+  const bootstrapAdmin = useCallback(async (name, email, password) => {
+    const { data } = await api.post('/api/auth/bootstrap-admin', {
+      name,
+      email,
+      password,
+    })
+    const token = data.data.token
+    const u = data.data.user
+    setAuthToken(token)
+    setUser(u)
+    localStorage.setItem('zorvyn_user', JSON.stringify(u))
+    return u
+  }, [])
+
   const value = useMemo(
     () => ({
       user,
@@ -56,10 +71,11 @@ export function AuthProvider({ children }) {
       login,
       logout,
       signup,
+      bootstrapAdmin,
       isAuthenticated: !!user,
       setUser,
     }),
-    [user, booting, login, logout, signup]
+    [user, booting, login, logout, signup, bootstrapAdmin]
   )
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>

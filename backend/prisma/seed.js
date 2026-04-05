@@ -4,8 +4,9 @@ const { prisma } = require('../db');
 const { hashPassword, comparePassword } = require('../lib/password');
 const { encrypt } = require('../lib/cryptoAtRest');
 
-const ADMIN_EMAIL = 'mohdkaifa909@gmail.com';
-const ADMIN_PASSWORD = '12344321';
+/** Override with ADMIN_EMAIL / ADMIN_PASSWORD in .env (same vars on Render when seeding). */
+const ADMIN_EMAIL = (process.env.ADMIN_EMAIL || 'mohdkaifa909@gmail.com').toLowerCase().trim();
+const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || '12344321';
 
 async function main() {
   // Run seed where env matches the API (e.g. Render Shell). If you seed from your PC

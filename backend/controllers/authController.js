@@ -34,4 +34,22 @@ const signup = asyncHandler(async (req, res) => {
   res.status(201).json({ success: true, data: user });
 });
 
-module.exports = { login, register, signup };
+const bootstrapStatus = asyncHandler(async (req, res) => {
+  const allowed = await authService.isBootstrapAllowed();
+  res.json({ success: true, data: { allowed } });
+});
+
+const bootstrapAdmin = asyncHandler(async (req, res) => {
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    throw new AppError(errors.array()[0].msg, 400);
+  }
+  const result = await authService.bootstrapFirstAdmin({
+    name: req.body.name,
+    email: req.body.email,
+    password: req.body.password,
+  });
+  res.status(201).json({ success: true, data: result });
+});
+
+module.exports = { login, register, signup, bootstrapStatus, bootstrapAdmin };

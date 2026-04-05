@@ -92,4 +92,59 @@ async function signupPublic({ name, email, password }) {
   return user;
 }
 
-module.exports = { login, registerUser, signupPublic };
+/** True only when no user has role Admin (fresh DB). */
+async function isBootstrapAllowed() {
+  const n = await prisma.user.count({ where: { role: 'Admin' } });
+  return n === 0;
+}
+
+/**
+ * Create the first (and only via this endpoint) administrator. Disabled once any Admin exists.
+ */
+async function bootstrapFirstAdmin({ name, email, password }) {
+  const allowed = await isBootstrapAllowed();
+  if (!allowed) {
+    throw new AppError(
+      'An administrator already exists. Sign in, or ask an admin to create accounts.',
+      403
+    );
+  }
+
+  const emailNorm = email.toLowerCase();
+  const existing = await prisma.user.findUnique({ where: { email: emailNorm } });
+  if (existing) {
+    throw new AppError('Email is already registered', 400);
+  }
+
+  const hashed = await hashPassword(password);
+  const user = await prisma.user.create({
+    data: {
+      name: name.trim(),
+      email: emailNorm,
+      password: hashed,
+      role: 'Admin',
+      status: 'active',
+    },
+  });
+
+  const token = signToken({ userId: user.id, email: user.email, role: user.role });
+
+  return {
+    token,
+    user: {
+      id: user.id,
+      name: user.name,
+      email: user.email,
+      role: user.role,
+      status: user.status,
+    },
+  };
+}
+
+module.exports = {
+  login,
+  registerUser,
+  signupPublic,
+  isBootstrapAllowed,
+  bootstrapFirstAdmin,
+};
