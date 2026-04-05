@@ -111,9 +111,11 @@ These are whatever the seed script prints; the admin account is set up for the p
 
 **Admin**
 
-- **Email:** `mohdkaifa909@gmail.com`  
-- **Password:** `12344321`  
-- **User ID:** usually `1` on a clean database (first row in `users`). If you already had other users before seeding, check MySQL: `SELECT id, email FROM users WHERE email = 'mohdkaifa909@gmail.com';`
+- **Default email / password** (if you don’t set env vars): `mohdkaifa909@gmail.com` / `12344321`  
+- **Custom admin:** set `ADMIN_EMAIL` and `ADMIN_PASSWORD` in `backend/.env` before `npm run db:seed` (use the same values in Render’s env if you seed there). Then log in with that email and password.  
+- **User ID:** depends on your DB; check: `SELECT id, email FROM users WHERE email = '…';`
+
+**Another admin account** (without re-seeding): log in as an existing admin → **Management** → use **Register** (`POST /api/auth/register`) to create a user with role **Admin** and a different email.
 
 **Analyst** — `analyst@zorvyn.local` / `analyst123`  
 
@@ -133,6 +135,9 @@ Most routes want:
 
 - `POST /api/auth/login` — body: `email`, `password`  
 - `POST /api/auth/signup` — public; creates a Viewer  
+- `GET /api/auth/bootstrap-status` — public; `{ data: { allowed: true } }` only when **no** user has role Admin (fresh DB)  
+- `POST /api/auth/bootstrap-admin` — public **only if** there is still **no** Admin in the database; body: `name`, `email`, `password` (min 6 chars); creates the **first** Admin and returns token + user (same shape as login). If you already ran **seed** or created an admin, the API returns **403** — sign in with that admin instead, or delete Admin rows / reset the DB to use bootstrap again.  
+- The **login page** always shows a **Create administrator account** section; the server still enforces the rules above.  
 - `POST /api/auth/register` — admin only; can set role/status  
 
 **Users** (admin only)
