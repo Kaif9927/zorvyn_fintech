@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
 import { api } from '../api/client'
+import { useAuth } from '../hooks/useAuth'
 function money(n) {
   return Number(n).toLocaleString(undefined, {
     minimumFractionDigits: 2,
@@ -11,6 +12,8 @@ const field =
   'w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-zinc-100 outline-none focus:border-sky-500/50 focus:ring-2 focus:ring-sky-500/20'
 
 export function Budgets() {
+  const { user } = useAuth()
+  const isAdmin = user?.role === 'Admin'
   const now = new Date()
   const [year, setYear] = useState(now.getFullYear())
   const [month, setMonth] = useState(now.getMonth() + 1)
@@ -130,42 +133,44 @@ export function Budgets() {
         </div>
       </div>
 
-      <form onSubmit={handleAdd} className="zorvyn-glass rounded-2xl p-6">
-        <h2 className="text-sm font-semibold text-white">Add or update budget (upserts by category)</h2>
-        <div className="mt-4 flex flex-wrap gap-4">
-          <div className="min-w-[180px] flex-1">
-            <label className="mb-1 block text-xs text-zinc-500">Category (e.g. Groceries)</label>
-            <input
-              required
-              className={field}
-              value={form.category}
-              onChange={(e) => setForm((f) => ({ ...f, category: e.target.value }))}
-              placeholder="Matches expense category"
-            />
+      {isAdmin && (
+        <form onSubmit={handleAdd} className="zorvyn-glass rounded-2xl p-6">
+          <h2 className="text-sm font-semibold text-white">Add or update budget (upserts by category)</h2>
+          <div className="mt-4 flex flex-wrap gap-4">
+            <div className="min-w-[180px] flex-1">
+              <label className="mb-1 block text-xs text-zinc-500">Category (e.g. Groceries)</label>
+              <input
+                required
+                className={field}
+                value={form.category}
+                onChange={(e) => setForm((f) => ({ ...f, category: e.target.value }))}
+                placeholder="Matches expense category"
+              />
+            </div>
+            <div className="w-40">
+              <label className="mb-1 block text-xs text-zinc-500">Monthly cap ($)</label>
+              <input
+                required
+                type="number"
+                min="0"
+                step="0.01"
+                className={field}
+                value={form.amount}
+                onChange={(e) => setForm((f) => ({ ...f, amount: e.target.value }))}
+              />
+            </div>
+            <div className="flex items-end">
+              <button
+                type="submit"
+                disabled={saving}
+                className="rounded-lg bg-sky-500 px-5 py-2 text-sm font-semibold text-white shadow-lg shadow-sky-500/20 hover:bg-sky-400 disabled:opacity-60"
+              >
+                {saving ? 'Saving…' : 'Save budget'}
+              </button>
+            </div>
           </div>
-          <div className="w-40">
-            <label className="mb-1 block text-xs text-zinc-500">Monthly cap ($)</label>
-            <input
-              required
-              type="number"
-              min="0"
-              step="0.01"
-              className={field}
-              value={form.amount}
-              onChange={(e) => setForm((f) => ({ ...f, amount: e.target.value }))}
-            />
-          </div>
-          <div className="flex items-end">
-            <button
-              type="submit"
-              disabled={saving}
-              className="rounded-lg bg-sky-500 px-5 py-2 text-sm font-semibold text-white shadow-lg shadow-sky-500/20 hover:bg-sky-400 disabled:opacity-60"
-            >
-              {saving ? 'Saving…' : 'Save budget'}
-            </button>
-          </div>
-        </div>
-      </form>
+        </form>
+      )}
 
       <div className="zorvyn-glass rounded-2xl p-6">
         <h2 className="text-sm font-semibold text-white">Spent vs budget ({month}/{year})</h2>
@@ -213,13 +218,17 @@ export function Budgets() {
             </table>
           </div>
         ) : (
-          <p className="mt-4 text-sm text-zinc-500">No budgets for this month — add one above.</p>
+          <p className="mt-4 text-sm text-zinc-500">
+            {isAdmin
+              ? 'No budgets for this month — add one above.'
+              : 'No budgets for this month.'}
+          </p>
         )}
       </div>
 
       <div className="zorvyn-glass overflow-hidden rounded-2xl">
         <div className="border-b border-white/10 px-6 py-3 text-sm font-semibold text-white">
-          Your budgets (edit amount or remove)
+          {isAdmin ? 'Your budgets (edit amount or remove)' : 'Budget caps (read-only)'}
         </div>
         <div className="overflow-x-auto">
           <table className="w-full min-w-[560px] text-left text-sm">
@@ -227,7 +236,7 @@ export function Budgets() {
               <tr className="text-xs uppercase text-zinc-500">
                 <th className="px-6 py-3 font-medium">Category</th>
                 <th className="px-6 py-3 font-medium text-right">Cap ($)</th>
-                <th className="px-6 py-3 font-medium text-right">Actions</th>
+                {isAdmin && <th className="px-6 py-3 font-medium text-right">Actions</th>}
               </tr>
             </thead>
             <tbody>
@@ -236,27 +245,33 @@ export function Budgets() {
                   <tr key={b.id} className="border-t border-white/10">
                     <td className="px-6 py-3 font-medium text-zinc-100">{b.category}</td>
                     <td className="px-6 py-3 text-right">
-                      <input
-                        type="number"
-                        min="0"
-                        step="0.01"
-                        defaultValue={b.amount}
-                        className={field + ' inline-block w-28 text-right'}
-                        onBlur={(e) => {
-                          const v = e.target.value
-                          if (v && Number(v) !== Number(b.amount)) updateAmount(b.id, v)
-                        }}
-                      />
+                      {isAdmin ? (
+                        <input
+                          type="number"
+                          min="0"
+                          step="0.01"
+                          defaultValue={b.amount}
+                          className={field + ' inline-block w-28 text-right'}
+                          onBlur={(e) => {
+                            const v = e.target.value
+                            if (v && Number(v) !== Number(b.amount)) updateAmount(b.id, v)
+                          }}
+                        />
+                      ) : (
+                        <span className="text-zinc-300">${money(b.amount)}</span>
+                      )}
                     </td>
-                    <td className="px-6 py-3 text-right">
-                      <button
-                        type="button"
-                        className="text-xs text-rose-400 hover:underline"
-                        onClick={() => remove(b.id)}
-                      >
-                        Remove
-                      </button>
-                    </td>
+                    {isAdmin && (
+                      <td className="px-6 py-3 text-right">
+                        <button
+                          type="button"
+                          className="text-xs text-rose-400 hover:underline"
+                          onClick={() => remove(b.id)}
+                        >
+                          Remove
+                        </button>
+                      </td>
+                    )}
                   </tr>
                 ))}
             </tbody>

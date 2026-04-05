@@ -8,10 +8,11 @@ const { validateRequest } = require('../middleware/validateRequest');
 const router = express.Router();
 
 router.use(checkAuth);
-router.use(checkRole('Admin', 'Analyst'));
 
+// Analyst: read list + summary only. Mutations are Admin-only (full management).
 router.get(
   '/summary',
+  checkRole('Admin', 'Analyst'),
   [
     query('year').optional().isInt({ min: 2000, max: 2100 }),
     query('month').optional().isInt({ min: 1, max: 12 }),
@@ -23,6 +24,7 @@ router.get(
 
 router.get(
   '/',
+  checkRole('Admin', 'Analyst'),
   [
     query('year').optional().isInt({ min: 2000, max: 2100 }),
     query('month').optional().isInt({ min: 1, max: 12 }),
@@ -34,6 +36,7 @@ router.get(
 
 router.post(
   '/',
+  checkRole('Admin'),
   [
     body('category').trim().notEmpty().withMessage('Category is required'),
     body('amount').isFloat({ min: 0 }).withMessage('Amount must be >= 0'),
@@ -47,6 +50,7 @@ router.post(
 
 router.patch(
   '/:id',
+  checkRole('Admin'),
   [
     param('id').isInt().withMessage('Invalid id'),
     body('amount').isFloat({ min: 0 }).withMessage('Amount is required'),
@@ -57,6 +61,7 @@ router.patch(
 
 router.delete(
   '/:id',
+  checkRole('Admin'),
   [param('id').isInt().withMessage('Invalid id'), validateRequest],
   budgetController.remove
 );
