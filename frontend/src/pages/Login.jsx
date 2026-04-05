@@ -1,14 +1,10 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { Link, useNavigate, useLocation } from 'react-router-dom'
-import { ArrowRight, Play, ShieldPlus } from 'lucide-react'
+import { ArrowRight, Play } from 'lucide-react'
 import { useAuth } from '../hooks/useAuth'
-import { api } from '../api/client'
-
-const fieldClass =
-  'w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2.5 text-sm text-zinc-100 outline-none focus:border-sky-500/50 focus:ring-2 focus:ring-sky-500/20'
 
 export function Login() {
-  const { login, bootstrapAdmin } = useAuth()
+  const { login } = useAuth()
   const navigate = useNavigate()
   const location = useLocation()
   const from = location.state?.from?.pathname || '/'
@@ -17,39 +13,6 @@ export function Login() {
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
-
-  /** From API: true = no Admin in DB yet. false = admin exists or request failed. */
-  const [bootstrapAllowed, setBootstrapAllowed] = useState(false)
-  const [bootstrapChecked, setBootstrapChecked] = useState(false)
-  const [bootstrapStatusError, setBootstrapStatusError] = useState(false)
-  const [showBootstrap, setShowBootstrap] = useState(false)
-  const [bName, setBName] = useState('')
-  const [bEmail, setBEmail] = useState('')
-  const [bPassword, setBPassword] = useState('')
-  const [bConfirm, setBConfirm] = useState('')
-  const [bError, setBError] = useState('')
-  const [bLoading, setBLoading] = useState(false)
-
-  useEffect(() => {
-    let cancelled = false
-    api
-      .get('/api/auth/bootstrap-status')
-      .then((res) => {
-        if (!cancelled) setBootstrapAllowed(!!res.data?.data?.allowed)
-      })
-      .catch(() => {
-        if (!cancelled) {
-          setBootstrapAllowed(false)
-          setBootstrapStatusError(true)
-        }
-      })
-      .finally(() => {
-        if (!cancelled) setBootstrapChecked(true)
-      })
-    return () => {
-      cancelled = true
-    }
-  }, [])
 
   async function handleSubmit(e) {
     e.preventDefault()
@@ -64,24 +27,6 @@ export function Login() {
       setError(msg)
     } finally {
       setLoading(false)
-    }
-  }
-
-  async function handleBootstrap(e) {
-    e.preventDefault()
-    setBError('')
-    if (bPassword !== bConfirm) {
-      setBError('Passwords do not match')
-      return
-    }
-    setBLoading(true)
-    try {
-      await bootstrapAdmin(bName, bEmail, bPassword)
-      navigate(from, { replace: true })
-    } catch (err) {
-      setBError(err.response?.data?.error || err.message || 'Could not create admin')
-    } finally {
-      setBLoading(false)
     }
   }
 
@@ -179,104 +124,6 @@ export function Login() {
           </Link>{' '}
           (viewer)
         </p>
-
-        <div className="mt-8 border-t border-white/10 pt-6">
-          <button
-            type="button"
-            onClick={() => {
-              setShowBootstrap((v) => !v)
-              setBError('')
-            }}
-            className="flex w-full items-center justify-center gap-2 rounded-lg border border-amber-500/30 bg-amber-500/10 px-4 py-2.5 text-sm font-medium text-amber-100 transition hover:bg-amber-500/15"
-          >
-            <ShieldPlus className="h-4 w-4" />
-            {showBootstrap ? 'Hide first-time admin setup' : 'Create administrator account'}
-          </button>
-          <p className="mt-2 text-center text-xs text-zinc-500">
-            {bootstrapStatusError && (
-              <span className="block text-amber-200/80">
-                Could not reach the server for status — you can still try below if this is a fresh
-                database.
-              </span>
-            )}
-            {bootstrapChecked && bootstrapAllowed && (
-              <span className="block text-emerald-400/90">
-                First-time setup: no administrator in the database yet — you can create one.
-              </span>
-            )}
-            {bootstrapChecked && !bootstrapAllowed && !bootstrapStatusError && (
-              <span className="block">
-                Server reports an admin already exists. This form will only work if you reset the DB
-                or remove all Admin users.
-              </span>
-            )}
-            {!bootstrapChecked && !bootstrapStatusError && (
-              <span className="block">Checking server…</span>
-            )}
-          </p>
-          {showBootstrap && (
-              <form onSubmit={handleBootstrap} className="mt-4 space-y-3 text-left">
-                {bError && (
-                  <div className="rounded-lg border border-rose-500/30 bg-rose-500/10 px-3 py-2 text-sm text-rose-200">
-                    {bError}
-                  </div>
-                )}
-                <div>
-                  <label className="mb-1 block text-xs text-zinc-500">Full name</label>
-                  <input
-                    required
-                    className={fieldClass}
-                    value={bName}
-                    onChange={(e) => setBName(e.target.value)}
-                    placeholder="Your name"
-                    autoComplete="name"
-                  />
-                </div>
-                <div>
-                  <label className="mb-1 block text-xs text-zinc-500">Admin email</label>
-                  <input
-                    type="email"
-                    required
-                    className={fieldClass}
-                    value={bEmail}
-                    onChange={(e) => setBEmail(e.target.value)}
-                    placeholder="admin@yourcompany.com"
-                    autoComplete="email"
-                  />
-                </div>
-                <div>
-                  <label className="mb-1 block text-xs text-zinc-500">Password</label>
-                  <input
-                    type="password"
-                    required
-                    minLength={6}
-                    className={fieldClass}
-                    value={bPassword}
-                    onChange={(e) => setBPassword(e.target.value)}
-                    autoComplete="new-password"
-                  />
-                </div>
-                <div>
-                  <label className="mb-1 block text-xs text-zinc-500">Confirm password</label>
-                  <input
-                    type="password"
-                    required
-                    className={fieldClass}
-                    value={bConfirm}
-                    onChange={(e) => setBConfirm(e.target.value)}
-                    autoComplete="new-password"
-                  />
-                </div>
-                <button
-                  type="submit"
-                  disabled={bLoading}
-                  className="w-full rounded-lg bg-amber-500/90 py-2.5 text-sm font-semibold text-zinc-950 shadow-lg shadow-amber-500/20 hover:bg-amber-400 disabled:opacity-60"
-                >
-                  {bLoading ? 'Creating…' : 'Create admin & sign in'}
-                </button>
-              </form>
-          )}
-        </div>
       </div>
     </div>
   )

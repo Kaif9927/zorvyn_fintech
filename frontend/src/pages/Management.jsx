@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
+import { ShieldPlus, UserPlus } from 'lucide-react'
 import { api } from '../api/client'
 
 const roles = ['Admin', 'Analyst', 'Viewer']
@@ -133,17 +134,32 @@ export function Management() {
             Create staff accounts, deactivate users, reset access.
           </p>
         </div>
-        <button
-          type="button"
-          onClick={() => {
-            setCreateOpen(true)
-            setCreateForm(emptyCreate)
-            setCreateError('')
-          }}
-          className="rounded-lg bg-sky-500 px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-sky-500/25 hover:bg-sky-400"
-        >
-          Add user
-        </button>
+        <div className="flex flex-wrap gap-2">
+          <button
+            type="button"
+            onClick={() => {
+              setCreateOpen(true)
+              setCreateForm({ ...emptyCreate, role: 'Admin' })
+              setCreateError('')
+            }}
+            className="inline-flex items-center gap-2 rounded-lg border border-amber-500/40 bg-amber-500/15 px-4 py-2.5 text-sm font-semibold text-amber-100 shadow-lg shadow-amber-500/10 hover:bg-amber-500/25"
+          >
+            <ShieldPlus className="h-4 w-4" />
+            Create administrator
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              setCreateOpen(true)
+              setCreateForm(emptyCreate)
+              setCreateError('')
+            }}
+            className="inline-flex items-center gap-2 rounded-lg bg-sky-500 px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-sky-500/25 hover:bg-sky-400"
+          >
+            <UserPlus className="h-4 w-4" />
+            Add user
+          </button>
+        </div>
       </div>
 
       {error && (
@@ -257,9 +273,13 @@ export function Management() {
       {createOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm">
           <div className="zorvyn-glass w-full max-w-md rounded-2xl p-6">
-            <h2 className="text-lg font-semibold text-white">Add user</h2>
+            <h2 className="text-lg font-semibold text-white">
+              {createForm.role === 'Admin' ? 'Create administrator' : 'Add user'}
+            </h2>
             <p className="mt-1 text-sm text-zinc-500">
-              Assign role and status. New accounts are active by default.
+              {createForm.role === 'Admin'
+                ? 'Creates a new account with full admin access.'
+                : 'Assign role and status. New accounts are active by default.'}
             </p>
             {createError && (
               <div className="mt-3 rounded-lg border border-rose-500/30 bg-rose-500/10 px-3 py-2 text-sm text-rose-200">

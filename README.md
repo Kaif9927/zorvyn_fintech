@@ -136,8 +136,7 @@ Most routes want:
 - `POST /api/auth/login` — body: `email`, `password`  
 - `POST /api/auth/signup` — public; creates a Viewer  
 - `GET /api/auth/bootstrap-status` — public; `{ data: { allowed: true } }` only when **no** user has role Admin (fresh DB)  
-- `POST /api/auth/bootstrap-admin` — public **only if** there is still **no** Admin in the database; body: `name`, `email`, `password` (min 6 chars); creates the **first** Admin and returns token + user (same shape as login). If you already ran **seed** or created an admin, the API returns **403** — sign in with that admin instead, or delete Admin rows / reset the DB to use bootstrap again.  
-- The **login page** always shows a **Create administrator account** section; the server still enforces the rules above.  
+- `POST /api/auth/bootstrap-admin` — public **only if** there is still **no** Admin in the database; body: `name`, `email`, `password` (min 6 chars); creates the **first** Admin and returns token + user (same shape as login). For **additional** admins after the first, use **Management → Create administrator** (or `POST /api/auth/register` as an existing admin).  
 - `POST /api/auth/register` — admin only; can set role/status  
 
 **Users** (admin only)
