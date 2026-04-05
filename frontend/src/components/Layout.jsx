@@ -1,11 +1,9 @@
 import { NavLink, Outlet } from 'react-router-dom'
 import {
   CreditCard,
-  HelpCircle,
   LayoutDashboard,
   LogOut,
   PiggyBank,
-  Settings,
   TrendingUp,
   Users,
   Wallet,
@@ -67,21 +65,7 @@ export function Layout() {
           </span>
         </nav>
 
-        <div className="mt-auto space-y-0.5 border-t border-white/10 pt-4">
-          <button
-            type="button"
-            className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left text-sm text-zinc-400 hover:bg-white/5 hover:text-zinc-200"
-          >
-            <HelpCircle className="h-4 w-4" />
-            Help Center
-          </button>
-          <button
-            type="button"
-            className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left text-sm text-zinc-400 hover:bg-white/5 hover:text-zinc-200"
-          >
-            <Settings className="h-4 w-4" />
-            Settings
-          </button>
+        <div className="mt-auto border-t border-white/10 pt-4">
           <button
             type="button"
             onClick={logout}
