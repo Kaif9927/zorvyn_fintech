@@ -2,9 +2,22 @@ import axios from 'axios'
 
 const baseURL = import.meta.env.VITE_API_URL ?? ''
 
+/** True when the production build has no API base URL (Vercel env missing). */
+export const isProductionMissingApiUrl =
+  import.meta.env.PROD && !String(import.meta.env.VITE_API_URL || '').trim()
+
+if (isProductionMissingApiUrl) {
+  // eslint-disable-next-line no-console
+  console.error(
+    '[Zorvyn] VITE_API_URL is not set. Add it in Vercel → Settings → Environment Variables ' +
+      '(your Render API origin, e.g. https://zorvyn-api.onrender.com), then redeploy.'
+  )
+}
+
 export const api = axios.create({
   baseURL,
-  timeout: 30_000,
+  /** Render free tier cold starts can exceed 30s */
+  timeout: 90_000,
   headers: { 'Content-Type': 'application/json' },
 })
 

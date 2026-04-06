@@ -1,6 +1,8 @@
 import { useState } from 'react'
 import { Link, useNavigate, useLocation } from 'react-router-dom'
 import { ArrowRight, Loader2, LogIn } from 'lucide-react'
+import { isProductionMissingApiUrl } from '../api/client'
+import { formatApiError } from '../lib/apiErrors'
 import { useAuth } from '../hooks/useAuth'
 
 export function Login() {
@@ -22,9 +24,7 @@ export function Login() {
       await login(email, password)
       navigate(from, { replace: true })
     } catch (err) {
-      const msg =
-        err.response?.data?.error || err.message || 'Could not sign in'
-      setError(msg)
+      setError(formatApiError(err))
     } finally {
       setLoading(false)
     }
@@ -80,6 +80,15 @@ export function Login() {
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
+          {isProductionMissingApiUrl && (
+            <div className="rounded-lg border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-sm text-amber-100">
+              <strong className="font-semibold">API URL not configured.</strong> In Vercel → Project →
+              Settings → Environment Variables, add{' '}
+              <code className="rounded bg-black/30 px-1">VITE_API_URL</code> = your backend origin
+              (e.g. <code className="rounded bg-black/30 px-1">https://your-api.onrender.com</code>,
+              no trailing slash), then redeploy.
+            </div>
+          )}
           {error && (
             <div className="rounded-lg border border-rose-500/30 bg-rose-500/10 px-3 py-2 text-sm text-rose-200">
               {error}
