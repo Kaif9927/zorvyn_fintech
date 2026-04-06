@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Link, useNavigate, useLocation } from 'react-router-dom'
-import { ArrowRight, LogIn } from 'lucide-react'
+import { ArrowRight, Loader2, LogIn } from 'lucide-react'
 import { useAuth } from '../hooks/useAuth'
 
 export function Login() {
@@ -112,9 +112,13 @@ export function Login() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full rounded-lg bg-sky-500 py-2.5 text-sm font-semibold text-white shadow-lg shadow-sky-500/20 transition hover:bg-sky-400 disabled:opacity-60"
+            aria-busy={loading}
+            className="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-sky-500 py-2.5 text-sm font-semibold text-white shadow-lg shadow-sky-500/20 transition hover:bg-sky-400 disabled:opacity-60"
           >
-            {loading ? 'Signing in…' : 'Sign in'}
+            {loading && (
+              <Loader2 className="h-4 w-4 shrink-0 animate-spin" aria-hidden />
+            )}
+            Sign in
           </button>
         </form>
 
