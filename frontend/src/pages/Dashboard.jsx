@@ -27,6 +27,7 @@ export function Dashboard() {
   const [trends, setTrends] = useState([])
   const [recent, setRecent] = useState([])
   const [categories, setCategories] = useState([])
+  const [forecast, setForecast] = useState(null)
   const [loading, setLoading] = useState(true)
   const [range, setRange] = useState('6M')
 
@@ -42,17 +43,19 @@ export function Dashboard() {
     async function load() {
       setLoading(true)
       try {
-        const [s, t, r, c] = await Promise.all([
+        const [s, t, r, c, f] = await Promise.all([
           api.get('/api/dashboard/summary'),
           api.get('/api/dashboard/monthly-trends', { params: { months: monthsParam } }),
           api.get('/api/dashboard/recent-transactions', { params: { limit: 6 } }),
           api.get('/api/dashboard/category-summary'),
+          api.get('/api/dashboard/expense-forecast', { params: { months: 6 } }),
         ])
         if (!cancelled) {
           setSummary(s.data.data)
           setTrends(t.data.data)
           setRecent(r.data.data)
           setCategories(c.data.data)
+          setForecast(f.data.data)
         }
       } catch {
         if (!cancelled) {
@@ -135,6 +138,64 @@ export function Dashboard() {
               </li>
             ))}
           </ul>
+        </div>
+      </div>
+
+      <div className={`${card}`}>
+        <div className="flex flex-wrap items-start justify-between gap-4">
+          <div>
+            <div className="text-sm font-medium text-zinc-500">
+              Next month expense forecast
+            </div>
+            <div className="mt-1 text-xs text-zinc-600">
+              Linear regression on last {forecast?.sampleSize ?? '—'} months
+            </div>
+            <div className="mt-3 text-3xl font-semibold tracking-tight text-pink-300">
+              {loading || !forecast
+                ? '—'
+                : `$${money(forecast.prediction.expense)}`}
+            </div>
+            <div className="mt-1 text-xs text-zinc-500">
+              for{' '}
+              <span className="font-medium text-zinc-300">
+                {forecast?.prediction?.month ?? '—'}
+              </span>
+            </div>
+          </div>
+          <div className="rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-xs text-zinc-400">
+            {forecast?.model ? (
+              <>
+                <div>
+                  <span className="text-zinc-500">Equation:</span>{' '}
+                  <span className="font-mono text-zinc-200">
+                    {forecast.model.equation}
+                  </span>
+                </div>
+                <div className="mt-1">
+                  <span className="text-zinc-500">Slope:</span>{' '}
+                  <span className="font-mono text-zinc-200">
+                    {forecast.model.slope}
+                  </span>
+                  <span className="ml-3 text-zinc-500">Intercept:</span>{' '}
+                  <span className="font-mono text-zinc-200">
+                    {forecast.model.intercept}
+                  </span>
+                </div>
+                <div className="mt-1">
+                  <span className="text-zinc-500">R²:</span>{' '}
+                  <span className="font-mono text-zinc-200">
+                    {forecast.model.r2}
+                  </span>
+                  <span className="ml-3 text-zinc-500">Method:</span>{' '}
+                  <span className="font-mono text-zinc-200">OLS</span>
+                </div>
+              </>
+            ) : (
+              <span className="text-zinc-500">
+                Not enough monthly history yet.
+              </span>
+            )}
+          </div>
         </div>
       </div>
 

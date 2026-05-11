@@ -30,4 +30,10 @@ router.get(
   dashboardController.weeklyTrends
 );
 
+router.get(
+  '/expense-forecast',
+  [query('months').optional().isInt({ min: 2, max: 24 }).toInt(), validateRequest],
+  dashboardController.expenseForecast
+);
+
 module.exports = router;

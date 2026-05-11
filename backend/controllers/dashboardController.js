@@ -1,4 +1,5 @@
 const dashboardService = require('../services/dashboardService');
+const forecastService = require('../services/forecastService');
 const { asyncHandler } = require('../lib/asyncHandler');
 
 const summary = asyncHandler(async (req, res) => {
@@ -41,10 +42,21 @@ const weeklyTrends = asyncHandler(async (req, res) => {
   res.json({ success: true, data });
 });
 
+const expenseForecast = asyncHandler(async (req, res) => {
+  const months = req.query.months || 6;
+  const data = await forecastService.predictNextMonthExpense(
+    req.user.id,
+    req.user.role,
+    months
+  );
+  res.json({ success: true, data });
+});
+
 module.exports = {
   summary,
   categorySummary,
   recentTransactions,
   monthlyTrends,
   weeklyTrends,
+  expenseForecast,
 };

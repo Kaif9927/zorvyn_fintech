@@ -1,0 +1,527 @@
+% Personal Finance Management System -- compact project report (~15 pages)
+% Author: Mohd Kaif | Reg: 909 | IIIT Kalyani | Guide: Prof. Bhaskar
+% Compile: pdflatex report.tex (twice for ToC)
+\documentclass[11pt,a4paper]{article}
+
+\usepackage[a4paper,margin=2.1cm]{geometry}
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{lmodern}
+\usepackage{microtype}
+\usepackage{amsmath,amssymb}
+\usepackage{booktabs}
+\usepackage{tabularx}
+\usepackage{array}
+\usepackage{enumitem}
+\usepackage{setspace}
+\usepackage[hidelinks]{hyperref}
+\usepackage{fancyhdr}
+
+\setstretch{1.10}
+\setlist{nosep,leftmargin=1.2em,topsep=2pt}
+\setlength{\parskip}{0.35em}
+\setlength{\parindent}{0pt}
+
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[L]{\small\textit{Personal Finance Management System}}
+\fancyhead[R]{\small Mohd Kaif (909)}
+\fancyfoot[C]{\thepage}
+\renewcommand{\headrulewidth}{0.3pt}
+
+\newcommand{\code}[1]{\texttt{\small #1}}
+
+\begin{document}
+
+\section{Introduction}
+Personal financial management has moved from spreadsheets to web
+applications that capture every transaction, classify spending, and
+surface insights. This project delivers a focused, end-to-end
+\textbf{Personal Finance Management System} (project codename
+\textit{Zorvyn}) with three clearly separated layers --- a React SPA, a
+JSON REST API, and a MySQL relational store --- and a strict role
+matrix enforced both at the API and in the UI.
+
+\subsection{Problem statement}
+Design and implement a system in which authenticated users can
+maintain financial records (amount, type, category, date, optional
+note), define \textbf{monthly category budgets}, and view summaries and
+trends. \textbf{Admin} manages users and all data; \textbf{Analyst}
+reads transactions, budgets, and analytics; \textbf{Viewer} consumes
+dashboard endpoints only.
+
+\subsection{Objectives}
+\begin{enumerate}
+  \item Design a normalised relational schema for users, transactions, and budgets.
+  \item Implement a layered REST API (\emph{routes $\rightarrow$ controllers $\rightarrow$ services}).
+  \item Enforce role-based access control with stateless JWTs.
+  \item Protect data with one-way password hashing and authenticated encryption for sensitive notes.
+  \item Build a responsive React UI with role-aware navigation and Chart.js analytics.
+  \item Forecast \emph{next month's total expense} from historical monthly totals using ordinary least-squares (OLS) linear regression.
+\end{enumerate}
+
+\subsection{Scope}
+\textit{In scope:} single-tenant deployment, English UI, soft-delete
+of records, manual / API testing. \textit{Out of scope:} rate
+limiting, OpenAPI/Swagger, automated test suites, multi-currency,
+native mobile clients.
+
+\section{Requirements}
+\textbf{Functional.} Authentication (login, public signup as Viewer,
+admin bootstrap when no admin exists, admin-only \code{/auth/register});
+user CRUD (Admin); financial-record CRUD with filters (date, category,
+type) and pagination; monthly per-category budgets with upsert and
+spent-vs-cap summary; dashboard endpoints (summary, category totals,
+recent transactions, monthly and weekly trends, \emph{linear-regression
+expense forecast}); a public \code{/health} probe.
+
+\textbf{Non-functional.} Server-side validation on every write;
+indexed queries; layered code; environment-driven configuration
+(\code{.env}); bcrypt-hashed passwords; AES-256-GCM-encrypted notes;
+HTTPS in production; pagination capped at 100.
+
+\textbf{Software / Hardware.} Node.js~18+, MySQL~8, npm~9+; modern
+browser; 4~GB+ RAM laptop for development; 256~MB+ container for the
+API in production.
+
+\section{Technology Stack}
+The implementation uses a JavaScript-everywhere stack. Table~\ref{tab:libs}
+lists every direct library together with its version and role. The
+codebase name in the repository is \textit{Zorvyn}; functionally it is
+a personal finance management system.
+
+\begin{table}[htbp]
+\centering
+\small
+\begin{tabularx}{\textwidth}{l l X}
+\toprule
+\textbf{Library / Tool} & \textbf{Version} & \textbf{Role in the project} \\
+\midrule
+\multicolumn{3}{l}{\textit{Backend (Node.js)}}\\
+Node.js              & $\geq$\,18 LTS  & JavaScript runtime, non-blocking event loop. \\
+Express              & 4.21.x          & HTTP server, routing, middleware pipeline. \\
+Prisma Client        & 6.x             & Type-safe ORM; query builder; migrations. \\
+\code{@prisma/client}\,Decimal & 6.x   & Arbitrary-precision \code{Decimal} for money sums. \\
+MySQL                & 8.x             & Relational store (InnoDB, utf8mb4). \\
+\code{jsonwebtoken}  & 9.x             & Sign/verify JWT (HS256) for auth. \\
+\code{bcryptjs}      & 2.4.x           & Password hashing (cost factor 12). \\
+\code{express-validator} & 7.x         & Declarative request body / query validation. \\
+\code{cors}          & 2.8.x           & CORS headers for the SPA. \\
+\code{dotenv}        & 16.x            & Environment variables from \code{.env}. \\
+Node \code{crypto}   & built-in        & AES-256-GCM authenticated encryption (notes). \\
+\code{nodemon}       & 3.x (dev)       & Auto-restart in development. \\
+\midrule
+\multicolumn{3}{l}{\textit{Frontend (React SPA)}}\\
+React                & 19.x            & UI component library. \\
+React DOM            & 19.x            & DOM renderer. \\
+Vite                 & 8.x             & Dev server (HMR) and production bundler. \\
+\code{@vitejs/plugin-react} & 6.x      & Fast Refresh + JSX support. \\
+React Router DOM     & 7.x             & Client-side routing and route guards. \\
+Axios                & 1.x             & HTTP client; bearer token interceptor. \\
+Chart.js             & 4.x             & Canvas-based charting engine. \\
+\code{react-chartjs-2} & 5.x           & React wrapper around Chart.js. \\
+Tailwind CSS         & 4.x             & Utility-first styling. \\
+\code{@tailwindcss/vite} & 4.x         & Tailwind integration plugin. \\
+\code{lucide-react}  & 1.x             & Icon set. \\
+ESLint               & 9.x (dev)       & Static analysis / lint. \\
+\midrule
+\multicolumn{3}{l}{\textit{Database, Tooling, Deployment}}\\
+MySQL InnoDB         & 8.x             & ACID storage engine, FK, row-level locking. \\
+Prisma Migrate       & 6.x             & Schema-as-code, \code{db push} / migrations. \\
+Git                  & latest          & Version control. \\
+Vercel               & ---             & Static hosting + CDN for the SPA. \\
+Render               & ---             & Managed Node web service for the API. \\
+Postman / Thunder    & ---             & Manual API exploration and testing. \\
+\bottomrule
+\end{tabularx}
+\caption{Libraries, versions, and their role in the project.}
+\label{tab:libs}
+\end{table}
+
+\section{System Architecture}
+The system follows a classic three-tier architecture.
+\textbf{(1) Presentation:} React SPA in the browser; JWT in
+\code{localStorage}; Axios attaches \code{Authorization: Bearer <jwt>}
+to every request. \textbf{(2) Application:} Express pipeline ---
+\code{cors $\rightarrow$ json $\rightarrow$ checkAuth $\rightarrow$
+checkRole $\rightarrow$ validateRequest $\rightarrow$ controller
+$\rightarrow$ service}; the global \code{errorHandler} maps domain
+errors to HTTP status codes. \textbf{(3) Data:} Prisma client over
+MySQL~8; transactions are not multi-statement, but \code{upsert} and
+\code{aggregate} are used heavily.
+
+Backend folders: \code{routes/}, \code{controllers/},
+\code{services/} (\code{authService}, \code{userService},
+\code{financialRecordService}, \code{budgetService},
+\code{dashboardService}, \code{forecastService}),
+\code{middleware/}, \code{lib/} (\code{jwt.js}, \code{password.js},
+\code{cryptoAtRest.js}, \code{errors.js}, \code{asyncHandler.js}),
+\code{prisma/} (\code{schema.prisma}, \code{seed.js}),
+\code{scripts/} (\code{verify-db.js}, \code{add-last-month.js},
+\code{fill-history.js} --- idempotent demo data backfills). Frontend:
+\code{pages/} (Login, Signup, Dashboard, Transactions, Budgets,
+Analytics, Management), \code{components/} (Layout, route guards,
+\code{MonthlyTrendsChart}, \code{CategoryDoughnuts}),
+\code{hooks/useAuth.jsx}, \code{api/client.js}.
+
+\section{Database Design}
+Three entities and three enums.
+
+\begin{itemize}
+  \item \textbf{User}\,(\code{id, name, email\,UQ, password, role, status, createdAt, updatedAt})
+        --- \code{password} is a bcrypt digest. Indexed on \code{email}, \code{role}.
+  \item \textbf{FinancialRecord}\,(\code{id, amount(Decimal\,14,2), type, category, date, note?, is\_deleted, userId\,FK, createdAt, updatedAt})
+        --- \code{note} stores AES-256-GCM ciphertext (Base64). Indexed
+        on \code{(userId,date)}, \code{category}, \code{type},
+        \code{is\_deleted}.
+  \item \textbf{Budget}\,(\code{id, userId\,FK, category, amount(Decimal\,14,2), year, month})
+        --- \emph{unique} on \code{(userId, category, year, month)} so that
+        \code{POST} acts as an idempotent upsert.
+\end{itemize}
+
+Enums: \code{Role $\in$ \{Admin, Analyst, Viewer\}},
+\code{UserStatus $\in$ \{active, inactive\}},
+\code{RecordType $\in$ \{income, expense\}}. Cascade delete on
+\code{User} removes that user's records and budgets.
+
+\section{REST API}
+Base path \code{/api}. Authenticated endpoints require
+\code{Authorization: Bearer <JWT>}. Responses use the envelope
+\code{\{success, data\}} or \code{\{success:false, error\}}.
+
+\textbf{Auth.} \code{POST /auth/login}, \code{POST /auth/signup}
+(creates Viewer), \code{GET /auth/bootstrap-status},
+\code{POST /auth/bootstrap-admin} (only if no admin exists),
+\code{POST /auth/register} (Admin only, may set role/status).
+
+\textbf{Users (Admin).} \code{GET /users} (page, limit, search),
+\code{GET /users/:id}, \code{PATCH /users/:id}, \code{DELETE /users/:id}.
+
+\textbf{Financial records.} \code{GET /financial-records} and
+\code{GET /financial-records/:id} for Admin and Analyst (Analyst
+scoped to own rows); \code{POST}, \code{PATCH}, \code{DELETE} for Admin
+only (delete is soft, sets \code{is\_deleted=true}). Filters:
+\code{dateFrom}, \code{dateTo}, \code{category}, \code{type},
+\code{search}, \code{page}, \code{limit}.
+
+\textbf{Budgets.} \code{GET /budgets}, \code{GET /budgets/summary} for
+Admin and Analyst; \code{POST}, \code{PATCH /:id}, \code{DELETE /:id}
+for Admin. Admin may pass \code{userId} where applicable.
+
+\textbf{Dashboard (any role, scoped).}
+\code{/dashboard/summary}, \code{/category-summary},
+\code{/recent-transactions}, \code{/monthly-trends},
+\code{/weekly-trends}, \code{/expense-forecast} (linear regression of
+next month's total expense). \textbf{Health:} public \code{GET /health}.
+
+\section{Security and Cryptography}
+\textbf{Authentication flow.} Client posts credentials; service looks
+up the user (lower-cased email) and uses bcrypt's constant-time
+comparison; on success a JWT is issued. \code{checkAuth} verifies the
+signature on every protected request and reloads the user record so
+that role / status changes take effect immediately.
+
+\textbf{Password storage.} \code{bcryptjs} with cost factor 12. An
+optional \code{PASSWORD\_PEPPER} (server-side secret) is concatenated
+with the password before hashing, raising the bar against database-only
+leaks.
+
+\textbf{Note encryption.} Free-text notes are encrypted at rest with
+AES-256-GCM and decrypted on read; tampering with either ciphertext or
+tag causes decryption to fail and the implementation falls back to
+treating the stored value as legacy plain text.
+
+\textbf{Defence-in-depth.} \code{express-validator} on every write;
+parameterised queries through Prisma (no SQL injection); React's
+default escaping (no \code{dangerouslySetInnerHTML}); CORS allow-list
+in production; soft-delete preserves audit history; generic error
+messages on login (no email enumeration).
+
+\section{Mathematical and Algorithmic Foundations}
+This section formalises the algorithms used by the API.
+
+\subsection{Password hashing -- bcrypt}
+Let $P$ be the user's password and $S$ a per-user 16-byte salt drawn
+uniformly at random. With cost factor $c=12$ the hash is
+\[
+H = \mathrm{Bcrypt}(c, S, K \mathbin{\Vert} \texttt{::} \mathbin{\Vert} P),
+\]
+where $K$ is the optional pepper and $\Vert$ denotes string
+concatenation. Internally bcrypt runs the Eksblowfish key schedule
+$2^{c} = 4096$ times before the encryption rounds, making the work
+factor exponential in $c$. The persisted digest follows the standard
+60-character format
+\[
+\$2a\$\,c\$\underbrace{S}_{22\text{ ch}}\underbrace{H}_{31\text{ ch}}.
+\]
+Verification re-hashes the candidate $P_c$ with the same $S$ and
+compares in \emph{constant time} using
+$\mathrm{ConstEq}(H, \mathrm{Bcrypt}(c, S, P_c))$, defeating timing
+attacks. Empirically, $c=12$ takes roughly $250$~ms on commodity
+hardware --- imperceptible at login but $\approx 4{,}000\times$ slower
+than $c=0$ for an offline attacker.
+
+\subsection{Authenticated encryption -- AES-256-GCM}
+Let $M$ be a plaintext note, $K \in \{0,1\}^{256}$ the master key
+(\code{ENCRYPTION\_KEY}), and $\mathrm{IV} \in \{0,1\}^{96}$ a freshly
+generated random IV (12 bytes; the implementation in fact uses 16
+bytes, which GCM still accepts after deriving an internal counter).
+GCM combines AES in counter mode with a polynomial MAC over
+$\mathrm{GF}(2^{128})$:
+\[
+C = M \oplus \mathrm{AES}_K(\mathrm{CTR}(\mathrm{IV})),
+\qquad
+T = \mathrm{GHASH}_H(A, C) \oplus \mathrm{AES}_K(J_0),
+\]
+where $H = \mathrm{AES}_K(0^{128})$ is the GHASH subkey, $A$ is the
+associated data (empty in this project), and $J_0$ is the initial
+counter block. The persisted ciphertext is
+\[
+\text{stored} = \mathrm{Base64}\bigl(\mathrm{IV} \mathbin{\Vert} T \mathbin{\Vert} C\bigr),
+\]
+with $|T|=16$ bytes. Decryption recomputes $T'$ and aborts if
+$T' \ne T$, giving simultaneous \emph{confidentiality} and
+\emph{integrity} (INT-CTXT). Because each write samples a fresh IV,
+two encryptions of the same note produce different ciphertexts, so
+substring search on notes is impossible without decrypt-then-scan ---
+hence the API restricts \code{?search=} to the \code{category} column.
+
+\subsection{Stateless sessions -- JWT (HS256)}
+A token is the standard three-part artefact
+\[
+\tau \;=\;
+\underbrace{\mathrm{B64}(\text{header})}_{\alpha}.\,
+\underbrace{\mathrm{B64}(\text{payload})}_{\beta}.\,
+\underbrace{\mathrm{B64}\bigl(\mathrm{HMAC\text{-}SHA256}_{K_J}(\alpha . \beta)\bigr)}_{\sigma},
+\]
+with payload $\{\code{userId}, \code{email}, \code{role}, \code{iat}, \code{exp}\}$.
+Verification recomputes
+$\sigma' = \mathrm{HMAC\text{-}SHA256}_{K_J}(\alpha . \beta)$ and
+accepts iff $\sigma'=\sigma$ \emph{and} $\code{now} < \code{exp}$.
+Default expiry is 7 days; reducing \code{JWT\_EXPIRES\_IN} narrows the
+revocation window without adding server state.
+
+\subsection{Dashboard aggregations}
+Let $R$ be the set of stored records and let
+\[
+S(u,\rho) \;=\;
+\bigl\{\,r \in R \;:\; r.\text{is\_deleted}=\mathrm{false},\;
+(\rho = \text{Admin}) \lor (r.\text{userId} = u)\,\bigr\}.
+\]
+Define the indicator $\mathbb{1}[\cdot]$. Then
+\[
+\boxed{\;
+I = \!\!\sum_{r \in S(u,\rho)} r.\text{amt}\cdot \mathbb{1}[r.\text{type}=\text{income}], \quad
+E = \!\!\sum_{r \in S(u,\rho)} r.\text{amt}\cdot \mathbb{1}[r.\text{type}=\text{expense}], \quad
+N = I - E.\;}
+\]
+The category breakdown is the projection
+$f:(\text{cat},\text{type}) \mapsto \sum_{r}\,r.\text{amt}$ taken over
+$S(u,\rho)$ grouped by \code{(category, type)}.
+
+\paragraph{Monthly bucketing.} For each $r$ with date $d = r.\text{date}$,
+let
+\[
+\kappa_m(r) \;=\; \mathrm{format}(d, \texttt{"YYYY-MM"}),
+\quad
+B_m[\kappa_m(r)] \mathrel{+}= (\,\text{income or expense based on } r.\text{type}\,).
+\]
+The output is the keys of $B_m$ in ascending lexical order (which
+coincides with chronological order). The implementation runs in
+$O(N)$ time and $O(M)$ space, where $N$ is the number of records and
+$M$ the number of distinct months in the window.
+
+\paragraph{Weekly bucketing (Monday-anchored).} Given a date $d$, let
+$w = d.\text{day}() \in \{0,\dots,6\}$ with Sunday $= 0$. The Monday
+of $d$'s ISO week is
+\[
+\mathrm{wkStart}(d) \;=\;
+\begin{cases}
+d - 6\,\text{days} & \text{if } w = 0,\\
+d + (1-w)\,\text{days} & \text{otherwise},
+\end{cases}
+\]
+formatted as \code{YYYY-MM-DD}. Weekly aggregation is otherwise
+identical to the monthly case.
+
+\paragraph{Spent-vs-budget.} For each budget row
+$b=(u,c,B,y,m)$ let $[t_s,t_e]$ be the inclusive month range
+$[\,\text{1st of }m\,,\,\text{last day of }m\text{ at 23:59:59}\,]$.
+Then
+\[
+\mathrm{Spent}(b) \;=\; \!\!\sum_{\substack{r\in R\\ r.\text{userId}=u\\ r.\text{type}=\text{expense}\\ r.\text{cat}=c\\ d \in [t_s,t_e]}} r.\text{amt},
+\quad
+\mathrm{Remaining}(b) = B - \mathrm{Spent}(b),
+\quad
+\mathrm{Over}(b) = \mathbb{1}[\mathrm{Spent}(b) > B].
+\]
+
+\subsection{Pagination}
+For requested page $p \ge 1$ and page size $\ell$,
+\[
+\ell^\star = \min(\ell, 100), \quad
+\text{skip} = (p-1)\,\ell^\star, \quad
+\text{take} = \ell^\star, \quad
+\text{totalPages} = \left\lceil \frac{N_W}{\ell^\star} \right\rceil,
+\]
+where $N_W$ is the unfiltered \code{count} for the same \code{where}
+clause. The list query and the count query are issued concurrently
+through \code{Promise.all}.
+
+\subsection{Linear regression -- next-month expense forecast}
+The dashboard predicts next month's total expense using
+\textbf{ordinary least-squares (OLS) linear regression} fitted on the
+last $n$ monthly expense totals. Let
+$\{(x_i, y_i)\}_{i=0}^{n-1}$ where $x_i = i$ is the 0-based month index
+(oldest first) and $y_i$ is the sum of expenses in that month. Define
+\[
+\bar{x} = \tfrac{1}{n}\sum_{i=0}^{n-1} x_i, \qquad
+\bar{y} = \tfrac{1}{n}\sum_{i=0}^{n-1} y_i.
+\]
+The slope $m$ and intercept $b$ minimising
+$\sum_i (y_i - (m\,x_i + b))^2$ are
+\[
+m \;=\; \frac{\sum_{i=0}^{n-1} (x_i - \bar{x})(y_i - \bar{y})}
+              {\sum_{i=0}^{n-1} (x_i - \bar{x})^2},
+\qquad
+b \;=\; \bar{y} - m\,\bar{x}.
+\]
+The forecast for the next month is the value at $x = n$:
+\[
+\hat{y}_{\text{next}} \;=\; \max\!\bigl(0,\; m\,n + b\bigr),
+\]
+clamped at zero so that the UI never displays a negative expense. The
+quality of the fit is reported as the \textbf{coefficient of
+determination}
+\[
+R^2 \;=\; 1 \;-\; \frac{\mathrm{SS}_{\text{res}}}{\mathrm{SS}_{\text{tot}}}
+\;=\; 1 \;-\;
+\frac{\sum_{i}(y_i - \hat{y}_i)^2}{\sum_{i}(y_i - \bar{y})^2},
+\quad \hat{y}_i = m\,x_i + b.
+\]
+$R^2 \to 1$ means the line explains the variance well; values close to
+$0$ indicate that monthly expenses are dominated by noise rather than a
+linear trend. When $n<2$ or $\sum_i (x_i-\bar{x})^2 = 0$, the service
+falls back to the last observed monthly expense. The endpoint is
+\code{GET /api/dashboard/expense-forecast?months=$n$} (default $n=6$,
+clamped to $[2,24]$), and the response includes the history, the
+fitted model $\{m, b, R^2\}$, and the predicted value for the next
+calendar month. Complexity is $O(N + n)$ in the number of records.
+
+\subsection{Decimal-safe money arithmetic}
+All money fields are \code{DECIMAL(14,2)} in MySQL and
+\code{Prisma.Decimal} in code; sums use Decimal addition rather than
+floating-point, so totals are exact for amounts up to
+$10^{12}$ rupees with two-place precision.
+
+\subsection{Algorithmic complexity (summary)}
+Let $N$ be the active records in scope, $M$ months, $W$ weeks, $K$
+budget categories, and $n$ the forecast window. Then \code{summary}
+= $O(N)$ via two indexed \code{aggregate} calls;
+\code{category-summary} = $O(N)$ via \code{groupBy};
+\code{monthly-trends} = $O(N+M)$;
+\code{weekly-trends} = $O(N+W)$;
+\code{budgets/summary} = $O(K \cdot N_b)$ where $N_b$ is the
+per-category expense count in the month;
+\code{expense-forecast} = $O(N+n)$ for the data fetch plus a single
+$O(n)$ pass for the OLS slope, intercept, and $R^2$.
+
+\section{Frontend}
+React Router~7 with two guards: \code{LoginGate} keeps logged-in users
+out of \code{/login} and \code{/signup}; \code{ProtectedRoute roles=[...]}
+redirects unauthenticated users and 403s users with the wrong role.
+Pages: \textbf{Dashboard} (KPI cards, the linear-regression
+\emph{Next-month expense forecast} card showing
+$y = m\,x + b$, slope, intercept and $R^2$, plus Chart.js doughnut and
+line/area charts), \textbf{Transactions} (paginated table + create/edit
+modal for Admin), \textbf{Budgets} (monthly grid with
+spent/remaining/over chips), \textbf{Analytics} (deeper read-only
+charts), \textbf{Management} (Admin-only user table). Axios is
+configured with a 90~s timeout to tolerate cold starts and a
+401-interceptor that wipes the token and sends the user back to
+\code{/login}.
+
+\subsection{Visualisation pipeline}
+The income-vs-spend ``Spend activity'' chart on the dashboard is built
+end-to-end in four stages:
+\begin{enumerate}
+  \item \textbf{MySQL $\rightarrow$ Prisma.} \code{getMonthlyTrends}
+        runs one \code{findMany} restricted to the last $n$ months for
+        the requesting scope (Admin sees all, others see their own).
+  \item \textbf{Express service.} Records are folded into a
+        \code{Map} keyed by \code{YYYY-MM}, with two
+        \code{Prisma.Decimal} accumulators per bucket
+        (income and expense); the array is sorted lexicographically
+        and returned as JSON.
+  \item \textbf{React state.} The Dashboard fetches
+        \code{/api/dashboard/monthly-trends},
+        \code{/category-summary},
+        \code{/recent-transactions} and
+        \code{/expense-forecast} in parallel via
+        \code{Promise.all}.
+  \item \textbf{Chart.js render.} The \code{MonthlyTrendsChart}
+        component maps the array into three parallel arrays
+        (labels, income, expense) and feeds two datasets to a
+        \code{<Line>} chart with smoothed Bezier curves
+        (\code{tension}=0.35), filled translucent areas
+        (\code{fill}=true), no point markers
+        (\code{pointRadius}=0), and an indexed tooltip that surfaces
+        both income and expense for the hovered month.
+\end{enumerate}
+
+\section{Testing and Deployment}
+\textbf{Testing.} Manual / API-level tests cover login (right and
+wrong password), role denials (Viewer hitting transactions), validation
+errors (negative amount), soft-delete visibility, budget upsert
+idempotency, monthly trend bucketing across month boundaries, JWT
+tampering, ciphertext tampering, and the \code{/expense-forecast}
+endpoint (slope sign, $R^2$ in $[0,1]$, prediction clamped at zero,
+fallback when $n<2$). \code{npm run db:verify} pings the
+database and prints row counts.
+
+\textbf{Demo data.} \code{scripts/fill-history.js} backfills six
+calendar months ending on the current date for the seeded Admin, using
+a deterministic PRNG so re-runs do not double-insert. After backfill
+the database holds 79 active records (income $\approx 4.88\text{L}$,
+expense $\approx 1.98\text{L}$), enough to make the linear-regression
+forecast meaningful.
+
+\textbf{Deployment.} Backend: Render web service running
+\code{node server.js} after \code{npm install \&\& npx prisma generate};
+required env vars are \code{DATABASE\_URL}, \code{JWT\_SECRET},
+\code{ENCRYPTION\_KEY}, optional \code{PASSWORD\_PEPPER},
+\code{ADMIN\_EMAIL}, \code{ADMIN\_PASSWORD}, \code{JWT\_EXPIRES\_IN}.
+Frontend: Vercel building \code{npm run build}; the only env var is
+\code{VITE\_API\_URL}. Containerisation works with a multi-stage Node
+20 Alpine image exposing port 5000.
+
+\section{Conclusion and Future Work}
+The Personal Finance Management System fulfils the stated goals: a
+RESTful API with strict RBAC, MySQL persistence through Prisma,
+defence-in-depth security (parameterised queries, validated input,
+authenticated encryption, hashed passwords, JWT auth), a usable
+analytics UI, and a simple but explainable forecasting model (OLS
+linear regression on monthly expense totals). Future work: automated
+test suites (Jest + Supertest, Vitest), \code{express-rate-limit} on
+auth endpoints, refresh tokens with revocation, OpenAPI/Swagger
+documents, multi-currency support, an append-only audit log for
+admins, and stronger forecasting --- weighted least squares,
+multivariate regression with month-of-year seasonality dummies,
+exponential smoothing, or ARIMA --- once enough historical data is
+available.
+
+\begin{thebibliography}{9}\small
+\bibitem{fielding} R.\,T.\ Fielding, \textit{Architectural Styles and the Design of Network-based Software Architectures}, PhD thesis, UC Irvine, 2000.
+\bibitem{rbac} R.\ Sandhu et al., ``Role-Based Access Control Models,'' \textit{IEEE Computer}, 29(2), 1996.
+\bibitem{bcrypt} N.\ Provos, D.\ Mazieres, ``A Future-Adaptable Password Scheme,'' USENIX, 1999.
+\bibitem{nist} NIST, \textit{Recommendation for Block Cipher Modes of Operation: GCM and GMAC}, SP 800-38D, 2007.
+\bibitem{jwt} M.\ Jones, J.\ Bradley, N.\ Sakimura, \textit{JSON Web Token (JWT)}, RFC 7519, IETF, 2015.
+\bibitem{prisma} Prisma Documentation, \url{https://www.prisma.io/docs}.
+\bibitem{express} Express.js Documentation, \url{https://expressjs.com}.
+\bibitem{react} React Documentation, \url{https://react.dev}.
+\bibitem{chartjs} Chart.js Documentation, \url{https://www.chartjs.org/docs}.
+\bibitem{owasp} OWASP, \textit{Cryptographic Storage Cheat Sheet}.
+\bibitem{ols} N.\ R.\ Draper and H.\ Smith, \textit{Applied Regression Analysis}, 3rd ed., Wiley, 1998 (OLS, $R^2$).
+\end{thebibliography}
+
+\end{document}
